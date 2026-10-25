@@ -1,0 +1,87 @@
+#1: The Persistent Volume (Actual Hard Drive)
+apiVersion: v1
+
+kind: PersistentVolume
+
+metadata:
+   name: mongo-pv
+
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+      
+  hostPath:
+    path: "/mnt/data/mongo"
+    type: DirectoryOrCreate
+---
+#2: The Persistent Volume Claim (The Request)   
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+#3:The Deployment (Database Pod)
+
+apiVersion:  apps/v1
+kind: Deployment
+metadata:
+  name: mongo-db-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: mongo-pod
+      labels:
+        type: DB
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:latest
+          ports:
+            - containerPort:  27017
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+
+      volumes:
+        - name: mongo-storage
+          persistentVolumeClaim:
+            claimName: mongo-pvc     
+--- 
+#4. Service yaml
+
+apiVersion: v1  
+kind: Service
+metadata:
+  name: mongo-svc
+spec:
+  selector:
+    type: DB
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+
+
+
+              
+
+
+
+
+
+
